@@ -1,0 +1,1 @@
+NEXT: Render deploy (Docker). Validate Dockerfile binds 0.0.0.0 and uses $PORT. Then set env vars and test rate limiting (429), HTTPS, and error hygiene.
