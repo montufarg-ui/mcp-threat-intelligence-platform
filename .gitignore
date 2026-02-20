@@ -1,15 +1,13 @@
-# Environment variables
+# secrets
 .env
 
-# Virtual environment
+# virtualenv
 venv/
+.venv/
 
-# Python cache
+# python cache
 __pycache__/
 *.pyc
 
-# Mac junk
+# mac
 .DS_Store
-
-# VS Code
-.vscode/

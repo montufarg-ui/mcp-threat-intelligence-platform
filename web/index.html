@@ -1,0 +1,1105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Threat Report (MCP)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --vs-orange: #F86500;
+      --vs-teal:   #135A62;
+      --vs-ice:    #D8E0E1;
+
+      --vs-orange-1:#E04400;
+      --vs-orange-2:#F59000;
+      --vs-orange-3:#FCCD62;
+
+      --vs-teal-1:#146962;
+      --vs-teal-2:#135A62;
+      --vs-teal-3:#196C7D;
+
+      --ink:#283741;
+      --bg0:#081114;
+      --bg1:#071A1F;
+
+      --text:#F5FAFB;
+      --muted:rgba(245,250,251,.72);
+      --muted2:rgba(245,250,251,.55);
+
+      --border:rgba(216,224,225,.18);
+      --border2:rgba(216,224,225,.28);
+
+      --shadow: 0 18px 55px rgba(0,0,0,.45);
+      --shadow2: 0 10px 28px rgba(0,0,0,.35);
+
+      --radius: 18px;
+      --radius2: 14px;
+
+      --ring: 0 0 0 4px rgba(248,101,0,.20);
+      --ring2: 0 0 0 4px rgba(19,90,98,.22);
+
+      --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue", "Noto Sans", "Liberation Sans", sans-serif;
+      --brand: Barlow, Inter, system-ui, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(248,101,0,.16), transparent 60%),
+        radial-gradient(900px 600px at 80% 20%, rgba(25,108,125,.18), transparent 55%),
+        radial-gradient(900px 700px at 60% 90%, rgba(252,205,98,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 70%, #040C0F 100%);
+    }
+
+    .wrap{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 26px 18px 60px;
+    }
+
+    .hero{
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) + 8px);
+      padding: 22px 22px 18px;
+      background:
+        linear-gradient(135deg, rgba(20,105,98,.22), rgba(19,90,98,.14) 45%, rgba(248,101,0,.10)),
+        rgba(7,26,31,.45);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background: linear-gradient(135deg, rgba(248,101,0,.40), rgba(25,108,125,.25), rgba(252,205,98,.22));
+      filter: blur(26px);
+      opacity:.28;
+      pointer-events:none;
+    }
+    .heroInner{
+      position: relative;
+      z-index: 1;
+      display:flex;
+      gap: 16px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    h1{
+      margin: 0 0 6px;
+      font-family: var(--brand);
+      letter-spacing: .4px;
+      font-size: 28px;
+      line-height: 1.12;
+    }
+    .sub{
+      margin:0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 78ch;
+    }
+
+    .brandBadge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border2);
+      background: rgba(216,224,225,.06);
+      color: rgba(245,250,251,.82);
+      font-size: 12px;
+      user-select:none;
+      white-space: nowrap;
+    }
+    .spark{
+      width: 12px; height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--vs-orange), var(--vs-orange-3));
+      box-shadow: 0 0 0 4px rgba(248,101,0,.14);
+    }
+    .vistaLogo{
+      height: 18px;
+      width: auto;
+      display:block;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,.35));
+    }
+
+    /* Layout: main + sidebar */
+    .grid{
+      margin-top: 16px;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap: 16px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      background: rgba(7,26,31,.46);
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(10px);
+    }
+
+    .row{
+      display:flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    label{
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .2px;
+    }
+
+    textarea{
+      width:100%;
+      height: 140px;
+      resize: vertical;
+      padding: 14px 14px;
+      border-radius: var(--radius2);
+      border: 1px solid var(--border);
+      background: rgba(216,224,225,.05);
+      color: var(--text);
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    textarea::placeholder{ color: rgba(245,250,251,.45); }
+    textarea:focus{
+      border-color: rgba(248,101,0,.55);
+      box-shadow: var(--ring);
+    }
+
+    select, button{
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(216,224,225,.05);
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+      transition: transform .06s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease, filter .15s ease;
+    }
+    select:focus{
+      border-color: rgba(19,90,98,.65);
+      box-shadow: var(--ring2);
+    }
+
+    .btn{
+      border: 0;
+      cursor: pointer;
+      font-weight: 800;
+      letter-spacing: .25px;
+      padding: 10px 14px;
+      font-family: var(--brand);
+      background: linear-gradient(135deg, var(--vs-orange-1), var(--vs-orange), var(--vs-orange-2));
+      box-shadow: 0 14px 30px rgba(248,101,0,.18);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn:hover{
+      filter: saturate(1.06);
+      transform: translateY(-1px);
+    }
+    .btn:active{ transform: translateY(0) scale(.99); }
+    .btn[disabled]{
+      opacity:.65;
+      cursor:not-allowed;
+      transform:none;
+      filter:none;
+    }
+
+    .hint{
+      margin-top: 10px;
+      color: var(--muted2);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .card{
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-top: 16px;
+      background:
+        linear-gradient(180deg, rgba(20,105,98,.14), rgba(7,26,31,.52)),
+        rgba(7,26,31,.52);
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(10px);
+      animation: pop .18s ease-out;
+    }
+    @keyframes pop{
+      from{ transform: translateY(6px); opacity: 0; }
+      to{ transform: translateY(0); opacity: 1; }
+    }
+
+    .pills{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom: 8px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--border2);
+      background: rgba(216,224,225,.06);
+      color: rgba(245,250,251,.82);
+      font-size: 12px;
+    }
+    .pill strong{ color: var(--text); font-weight: 800; }
+
+    .pillLvl::before{
+      content:"";
+      width:9px; height:9px; border-radius:999px;
+      background: var(--vs-orange-3);
+      box-shadow: 0 0 0 4px rgba(252,205,98,.14);
+    }
+    .pillScore::before{
+      content:"";
+      width:9px; height:9px; border-radius:999px;
+      background: var(--vs-orange);
+      box-shadow: 0 0 0 4px rgba(248,101,0,.14);
+    }
+    .pillConf::before{
+      content:"";
+      width:9px; height:9px; border-radius:999px;
+      background: var(--vs-teal-3);
+      box-shadow: 0 0 0 4px rgba(25,108,125,.16);
+    }
+
+    h3{
+      margin: 14px 0 8px;
+      font-size: 14px;
+      letter-spacing: .25px;
+      font-family: var(--brand);
+    }
+    ul{ margin: 0 0 8px 18px; }
+    li{ margin: 6px 0; color: rgba(245,250,251,.92); }
+    li::marker{ color: rgba(248,101,0,.90); }
+
+    details{
+      border: 1px solid var(--border);
+      border-radius: var(--radius2);
+      padding: 10px 12px;
+      background: rgba(216,224,225,.04);
+    }
+    summary{
+      cursor: pointer;
+      color: rgba(245,250,251,.80);
+      font-weight: 800;
+      outline: none;
+      font-family: var(--brand);
+      letter-spacing: .2px;
+    }
+
+    pre{
+      margin: 10px 0 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: rgba(0,0,0,.22);
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(216,224,225,.10);
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(245,250,251,.92);
+    }
+
+    .err{
+      border-color: rgba(248,101,0,.55) !important;
+      background: rgba(248,101,0,.08);
+    }
+
+    .footer{
+      margin-top: 16px;
+      color: rgba(245,250,251,.55);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    /* Sidebar: process + history */
+    .sideTitle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 10px;
+    }
+    .tag{
+      font-size: 11px;
+      color: rgba(245,250,251,.75);
+      border: 1px solid var(--border2);
+      background: rgba(216,224,225,.06);
+      padding: 6px 10px;
+      border-radius: 999px;
+      user-select:none;
+      white-space:nowrap;
+    }
+
+    .timeline{
+      margin-top: 10px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding-left: 6px;
+    }
+    .tItem{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .tDot{
+      margin-top: 4px;
+      width: 10px; height: 10px;
+      border-radius: 999px;
+      background: rgba(216,224,225,.30);
+      box-shadow: 0 0 0 4px rgba(216,224,225,.10);
+      flex: 0 0 auto;
+    }
+    .tDot.on{
+      background: linear-gradient(135deg, var(--vs-orange), var(--vs-orange-3));
+      box-shadow: 0 0 0 4px rgba(248,101,0,.14);
+    }
+    .tDot.done{
+      background: rgba(25,108,125,.95);
+      box-shadow: 0 0 0 4px rgba(25,108,125,.18);
+    }
+    .tTxt{
+      font-size: 12px;
+      color: rgba(245,250,251,.86);
+      line-height: 1.35;
+    }
+    .tSmall{
+      font-size: 11px;
+      color: rgba(245,250,251,.58);
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
+    .history{
+      margin-top: 14px;
+      border-top: 1px solid rgba(216,224,225,.10);
+      padding-top: 12px;
+    }
+    .histList{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .histItem{
+      border: 1px solid rgba(216,224,225,.14);
+      background: rgba(216,224,225,.04);
+      border-radius: 14px;
+      padding: 10px 12px;
+      cursor:pointer;
+      transition: transform .08s ease, border-color .15s ease, background .15s ease;
+    }
+    .histItem:hover{
+      transform: translateY(-1px);
+      border-color: rgba(248,101,0,.30);
+      background: rgba(248,101,0,.06);
+    }
+    .histTop{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+    }
+    .histWhen{
+      font-size: 11px;
+      color: rgba(245,250,251,.60);
+      white-space: nowrap;
+    }
+    .histRisk{
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing:.2px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(216,224,225,.18);
+      background: rgba(216,224,225,.06);
+      text-transform: uppercase;
+    }
+    .histMeta{
+      margin-top: 6px;
+      font-size: 12px;
+      color: rgba(245,250,251,.78);
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .linkRow{
+      display:flex;
+      gap:10px;
+      margin-top:10px;
+    }
+    .ghostBtn{
+      flex: 1 1 auto;
+      cursor:pointer;
+      font-weight: 800;
+      letter-spacing:.2px;
+      border: 1px solid rgba(216,224,225,.18);
+      background: rgba(216,224,225,.04);
+    }
+    .ghostBtn:hover{
+      border-color: rgba(19,90,98,.50);
+      box-shadow: var(--ring2);
+    }
+
+    /* Loading overlay */
+    .overlay{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      z-index: 9999;
+      backdrop-filter: blur(6px);
+    }
+    .overlayCard{
+      width: min(520px, 100%);
+      border: 1px solid rgba(216,224,225,.18);
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(20,105,98,.22), rgba(19,90,98,.14) 45%, rgba(248,101,0,.10)),
+        rgba(7,26,31,.72);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .overlayTop{
+      display:flex;
+      gap: 14px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .spinner{
+      width: 42px; height: 42px;
+      border-radius: 999px;
+      border: 4px solid rgba(216,224,225,.18);
+      border-top-color: rgba(248,101,0,.95);
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin{ to { transform: rotate(360deg); } }
+    .overlayTitle{
+      font-family: var(--brand);
+      font-size: 16px;
+      margin: 0;
+      letter-spacing: .25px;
+    }
+    .overlaySub{
+      margin: 6px 0 0;
+      color: rgba(245,250,251,.70);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .bar{
+      margin-top: 14px;
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(216,224,225,.12);
+      background: rgba(216,224,225,.06);
+      overflow:hidden;
+    }
+    .barFill{
+      height: 100%;
+      width: 12%;
+      background: linear-gradient(135deg, rgba(248,101,0,.95), rgba(252,205,98,.85));
+      border-radius: 999px;
+      transition: width .35s ease;
+    }
+    .overlaySteps{
+      margin-top: 12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .oStep{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      font-size: 12px;
+      color: rgba(245,250,251,.82);
+    }
+    .oDot{
+      margin-top: 4px;
+      width: 9px; height: 9px;
+      border-radius: 999px;
+      background: rgba(216,224,225,.28);
+      box-shadow: 0 0 0 4px rgba(216,224,225,.10);
+      flex: 0 0 auto;
+    }
+    .oDot.on{
+      background: var(--vs-orange);
+      box-shadow: 0 0 0 4px rgba(248,101,0,.14);
+    }
+    .oDot.done{
+      background: rgba(25,108,125,.95);
+      box-shadow: 0 0 0 4px rgba(25,108,125,.18);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Loading overlay -->
+  <div id="overlay" class="overlay" aria-live="polite" aria-busy="true">
+    <div class="overlayCard">
+      <div class="overlayTop">
+        <div style="display:flex; gap:12px; align-items:center;">
+          <div class="spinner" aria-hidden="true"></div>
+          <div>
+            <p class="overlayTitle" id="overlayTitle">Generating threat report</p>
+            <p class="overlaySub" id="overlaySub">Working through enrichment, correlation, and summary…</p>
+          </div>
+        </div>
+        <div class="tag">MCP • SAFE MODE</div>
+      </div>
+
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+        <div id="barFill" class="barFill"></div>
+      </div>
+
+      <div class="overlaySteps" id="overlaySteps"></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="hero">
+      <div class="heroInner">
+        <div>
+          <h1>Threat Report</h1>
+          <p class="sub">
+            Paste IOCs (one per line): IPs, domains, hashes, CVEs.
+            Choose audience/tone, then generate a report with risk highlights + next actions.
+          </p>
+        </div>
+
+        <div class="brandBadge" title="Vista Solutions Threat Report UI">
+          <img class="vistaLogo"
+               src="https://vista-sol.com/wp-content/uploads/2023/08/sticky-logo-e1692214154981.png"
+               alt="Vista Solutions">
+          <span class="spark" aria-hidden="true"></span>
+          VISTA SOLUTIONS • MCP AI Threat Detector
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- MAIN -->
+      <div>
+        <div class="panel">
+          <div class="row" style="margin-top:0;">
+            <textarea id="iocs" placeholder="8.8.8.8&#10;google.com&#10;CVE-2021-44228"></textarea>
+          </div>
+
+          <div class="row">
+            <label for="audience">Audience</label>
+            <select id="audience">
+              <option value="novice" selected>novice</option>
+              <option value="soc_analyst">soc_analyst</option>
+            </select>
+
+            <label for="tone">Tone</label>
+            <select id="tone">
+              <option value="calm" selected>calm</option>
+              <option value="urgent">urgent</option>
+            </select>
+
+            <label for="verbosity">Verbosity</label>
+            <select id="verbosity">
+              <option value="short" selected>short</option>
+              <option value="medium">medium</option>
+              <option value="long">long</option>
+            </select>
+
+            <button id="run" class="btn">Generate report</button>
+          </div>
+
+          <div class="hint">
+            Tip: keep IOCs clean—one per line. Mix types freely (IP / domain / hash / CVE).
+          </div>
+        </div>
+
+        <div id="out" class="card" style="display:none;">
+          <div class="pills">
+            <span class="pill pillLvl" id="level"></span>
+            <span class="pill pillScore" id="score"></span>
+            <span class="pill pillConf" id="confidence"></span>
+          </div>
+
+          <h3>What we checked</h3>
+          <ul id="checked"></ul>
+
+          <h3>Summary</h3>
+          <ul id="summary"></ul>
+
+          <h3>Top risks</h3>
+          <ul id="risks"></ul>
+
+          <h3>Recommended actions</h3>
+          <ul id="actions"></ul>
+
+          <h3>Limitations</h3>
+          <ul id="limits"></ul>
+
+          <details style="margin-top: 14px;">
+            <summary>Technical details (trimmed)</summary>
+            <pre id="tech"></pre>
+          </details>
+        </div>
+
+        <div id="err" class="card err" style="display:none;">
+          <h3>Error</h3>
+          <pre id="errText"></pre>
+        </div>
+
+        <div class="footer">© Vista Solutions • Threat Reporting UI</div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <aside>
+        <div class="panel">
+          <div class="sideTitle">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <span class="spark" style="width:10px;height:10px;"></span>
+              <strong style="font-family:var(--brand); letter-spacing:.2px;">Live Process</strong>
+            </div>
+            <span class="tag">NO IOC EXPOSURE</span>
+          </div>
+
+          <div class="hint" style="margin-top:0;">
+            This panel shows what the system is doing (validation → enrichment → correlation → summary),
+            without displaying the IOC values.
+          </div>
+
+          <div class="timeline" id="processTimeline"></div>
+
+          <div class="history">
+            <div class="sideTitle" style="margin-bottom:6px;">
+              <strong style="font-family:var(--brand); letter-spacing:.2px;">History</strong>
+              <span class="tag" id="histCount">0 saved</span>
+            </div>
+
+            <div class="hint" style="margin-top:0;">
+              Stored locally in your browser. Shows timestamp + risk + counts (no IOC values).
+            </div>
+
+            <div class="linkRow">
+              <button id="clearHist" class="ghostBtn">Clear history</button>
+              <button id="exportHist" class="ghostBtn">Export JSON</button>
+            </div>
+
+            <div class="histList" id="histList"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function fillList(el, items) {
+    el.innerHTML = "";
+    (items || []).forEach(x => {
+      const li = document.createElement("li");
+      li.textContent = x;
+      el.appendChild(li);
+    });
+  }
+
+  function parseLLMAnalysis(text) {
+    const out = { overallRisk: null, summary: [], actions: [], limitations: [] };
+    if (!text || typeof text !== "string") return out;
+
+    const lines = text.split(/\r?\n/).map(l => l.trim());
+    let section = null;
+
+    for (const line of lines) {
+      if (!line) continue;
+
+      const m = line.match(/^Overall Risk:\s*(.+)$/i);
+      if (m) { out.overallRisk = m[1].trim().toLowerCase(); section = null; continue; }
+
+      if (/^Summary:\s*$/i.test(line)) { section = "summary"; continue; }
+      if (/^Recommended Actions:\s*$/i.test(line)) { section = "actions"; continue; }
+      if (/^Limitations:\s*$/i.test(line)) { section = "limitations"; continue; }
+
+      if (line.startsWith("-")) {
+        const bullet = line.replace(/^-+\s*/, "").trim();
+        if (bullet && section && out[section]) out[section].push(bullet);
+        continue;
+      }
+
+      if (section && out[section]) out[section].push(line);
+    }
+    return out;
+  }
+
+  function setPill(el, label, value) {
+    el.innerHTML = `<strong>${label}:</strong> ${value}`;
+  }
+
+  // -----------------------------
+  // LIVE PROCESS (SAFE)
+  // -----------------------------
+  const PROCESS_STEPS = [
+    { key: "validate", title: "Validate & normalize inputs", sub: "Trim lines, detect types, basic format checks" },
+    { key: "enrich", title: "Enrich indicators", sub: "Query providers + cache where possible" },
+    { key: "correlate", title: "Correlate results", sub: "Compute overall risk + consolidate findings" },
+    { key: "summarize", title: "Generate report summary", sub: "LLM produces a human-readable triage note" },
+    { key: "done", title: "Finalize output", sub: "Render results + store run in history" },
+  ];
+
+  function renderTimeline(activeKey, doneKeys = []) {
+    const wrap = $("processTimeline");
+    wrap.innerHTML = "";
+    for (const s of PROCESS_STEPS) {
+      const row = document.createElement("div");
+      row.className = "tItem";
+      const dot = document.createElement("div");
+      dot.className = "tDot";
+
+      if (doneKeys.includes(s.key)) dot.classList.add("done");
+      if (s.key === activeKey) dot.classList.add("on");
+
+      const txt = document.createElement("div");
+      txt.innerHTML = `<div class="tTxt">${s.title}</div><div class="tSmall">${s.sub}</div>`;
+
+      row.appendChild(dot);
+      row.appendChild(txt);
+      wrap.appendChild(row);
+    }
+  }
+
+  function renderOverlaySteps(activeKey, doneKeys = []) {
+    const wrap = $("overlaySteps");
+    wrap.innerHTML = "";
+    for (const s of PROCESS_STEPS) {
+      const row = document.createElement("div");
+      row.className = "oStep";
+      const dot = document.createElement("div");
+      dot.className = "oDot";
+      if (doneKeys.includes(s.key)) dot.classList.add("done");
+      if (s.key === activeKey) dot.classList.add("on");
+      const txt = document.createElement("div");
+      txt.textContent = s.title;
+      row.appendChild(dot);
+      row.appendChild(txt);
+      wrap.appendChild(row);
+    }
+  }
+
+  function showOverlay(show) {
+    $("overlay").style.display = show ? "flex" : "none";
+  }
+
+  function setProgress(pct) {
+    $("barFill").style.width = `${pct}%`;
+  }
+
+  let phaseTimer = null;
+  function startPhaseAnimation() {
+    const phases = [
+      { key:"validate", pct: 18, title:"Preparing IOCs", sub:"Validating formats and normalizing inputs…" },
+      { key:"enrich", pct: 48, title:"Enriching indicators", sub:"Collecting intel from providers (with caching)…" },
+      { key:"correlate", pct: 72, title:"Correlating evidence", sub:"Combining signals into a unified risk view…" },
+      { key:"summarize", pct: 90, title:"Writing the report", sub:"Producing a readable summary + actions…" },
+    ];
+    let idx = 0;
+    let doneKeys = [];
+    renderTimeline(phases[0].key, doneKeys);
+    renderOverlaySteps(phases[0].key, doneKeys);
+    $("overlayTitle").textContent = phases[0].title;
+    $("overlaySub").textContent = phases[0].sub;
+    setProgress(phases[0].pct);
+
+    phaseTimer = setInterval(() => {
+      if (idx >= phases.length - 1) return;
+      doneKeys.push(phases[idx].key);
+      idx += 1;
+      renderTimeline(phases[idx].key, doneKeys);
+      renderOverlaySteps(phases[idx].key, doneKeys);
+      $("overlayTitle").textContent = phases[idx].title;
+      $("overlaySub").textContent = phases[idx].sub;
+      setProgress(phases[idx].pct);
+    }, 850);
+  }
+
+  function stopPhaseAnimation() {
+    if (phaseTimer) clearInterval(phaseTimer);
+    phaseTimer = null;
+  }
+
+  // -----------------------------
+  // HISTORY (NO IOC VALUES)
+  // -----------------------------
+  const HIST_KEY = "mcp_threat_report_history_v1";
+
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HIST_KEY) || "[]"); }
+    catch { return []; }
+  }
+
+  function saveHistory(items) {
+    localStorage.setItem(HIST_KEY, JSON.stringify(items));
+  }
+
+  function fmtTime(ts) {
+    try {
+      const d = new Date(ts);
+      return d.toLocaleString();
+    } catch {
+      return String(ts);
+    }
+  }
+
+  function renderHistory() {
+    const list = $("histList");
+    const items = loadHistory();
+    $("histCount").textContent = `${items.length} saved`;
+    list.innerHTML = "";
+
+    if (!items.length) {
+      const empty = document.createElement("div");
+      empty.className = "hint";
+      empty.style.marginTop = "10px";
+      empty.textContent = "No history yet. Generate a report to save it here.";
+      list.appendChild(empty);
+      return;
+    }
+
+    items.slice(0, 12).forEach((it) => {
+      const card = document.createElement("div");
+      card.className = "histItem";
+
+      const top = document.createElement("div");
+      top.className = "histTop";
+
+      const when = document.createElement("div");
+      when.className = "histWhen";
+      when.textContent = fmtTime(it.time);
+
+      const risk = document.createElement("div");
+      risk.className = "histRisk";
+      risk.textContent = (it.overallRisk || "unknown").toUpperCase();
+
+      top.appendChild(when);
+      top.appendChild(risk);
+
+      const meta = document.createElement("div");
+      meta.className = "histMeta";
+      meta.innerHTML = `
+        <span>IOCs: <strong>${it.iocCount ?? "?"}</strong></span>
+        <span>Findings: <strong>${it.findingsCount ?? "?"}</strong></span>
+        <span>Errors: <strong>${it.errorsCount ?? "0"}</strong></span>
+      `;
+
+      card.appendChild(top);
+      card.appendChild(meta);
+
+      card.addEventListener("click", () => {
+        $("out").style.display = "none";
+        $("err").style.display = "none";
+
+        setPill($("level"), "Overall risk", (it.overallRisk || "unknown"));
+        setPill($("score"), "Findings", String(it.findingsCount ?? "?"));
+        setPill($("confidence"), "Provider errors", String(it.errorsCount ?? "0"));
+
+        fillList($("checked"), [`(hidden) ${it.iocCount ?? "?"} IOC(s) used`]);
+        fillList($("summary"), it.summary || ["No summary saved."]);
+        fillList($("actions"), it.actions || ["No actions saved."]);
+        fillList($("limits"), it.limitations || ["No limitations saved."]);
+        fillList($("risks"), (it.summary || []).slice(0,6).length ? (it.summary || []).slice(0,6) : ["No risks identified."]);
+
+        $("tech").textContent = JSON.stringify(it.tech || {}, null, 2);
+        $("out").style.display = "block";
+
+        renderTimeline("done", ["validate","enrich","correlate","summarize","done"]);
+      });
+
+      list.appendChild(card);
+    });
+  }
+
+  function addToHistory(entry) {
+    const items = loadHistory();
+    items.unshift(entry);
+    saveHistory(items.slice(0, 25));
+    renderHistory();
+  }
+
+  $("clearHist").addEventListener("click", () => {
+    saveHistory([]);
+    renderHistory();
+  });
+
+  $("exportHist").addEventListener("click", () => {
+    const items = loadHistory();
+    const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mcp-threat-report-history.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  renderTimeline("validate", []);
+  renderHistory();
+
+  // -----------------------------
+  // BUTTON ACTION
+  // -----------------------------
+  $("run").addEventListener("click", async () => {
+    $("out").style.display = "none";
+    $("err").style.display = "none";
+
+    const btn = $("run");
+    btn.disabled = true;
+
+    const iocs = $("iocs").value
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    if (iocs.length === 0) {
+      $("errText").textContent = "Please paste at least one IOC (one per line).";
+      $("err").style.display = "block";
+      btn.disabled = false;
+      return;
+    }
+
+    showOverlay(true);
+    startPhaseAnimation();
+
+    const payload = {
+      iocs,
+      audience: $("audience").value,
+      tone: $("tone").value,
+      verbosity: $("verbosity").value
+    };
+
+    try {
+      const res = await fetch("/tools/llm_triage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text);
+      }
+
+      const data = await res.json();
+
+      stopPhaseAnimation();
+      setProgress(100);
+      $("overlayTitle").textContent = "Finalizing output";
+      $("overlaySub").textContent = "Rendering results and updating history…";
+      renderTimeline("done", ["validate","enrich","correlate","summarize","done"]);
+      renderOverlaySteps("done", ["validate","enrich","correlate","summarize","done"]);
+
+      const overallRisk = (data.overallRisk || "unknown").toLowerCase();
+      const analysisText = data.llm_analysis || "";
+      const parsed = parseLLMAnalysis(analysisText);
+
+      setPill($("level"), "Overall risk", parsed.overallRisk || overallRisk || "unknown");
+      setPill($("score"), "Findings", String(data.findingsCount ?? "?"));
+      setPill($("confidence"), "Provider errors", String(data.errorsCount ?? "0"));
+
+      fillList($("checked"), iocs);
+      fillList($("summary"), parsed.summary.length ? parsed.summary : ["No summary returned."]);
+      fillList($("actions"), parsed.actions.length ? parsed.actions : ["No actions returned."]);
+      fillList($("limits"), parsed.limitations.length ? parsed.limitations : ["No limitations returned."]);
+      fillList($("risks"), parsed.summary.length ? parsed.summary.slice(0, 6) : ["No risks identified."]);
+
+      // Tech details (safe): show trace but not IOC values
+      const safeTech = {
+        overallRisk: data.overallRisk,
+        findingsCount: data.findingsCount,
+        errorsCount: data.errorsCount,
+        trace: (data.trace || []).map(t => ({
+          step: t.step,
+          type: t.type,
+          tool: t.tool,
+          status: t.status,
+          cached: t.cached
+        }))
+      };
+      $("tech").textContent = JSON.stringify(safeTech, null, 2);
+
+      // Nice “completed” message using trace summary (safe)
+      const toolCounts = {};
+      (data.trace || []).forEach(t => {
+        const k = t.tool || "unknown";
+        toolCounts[k] = (toolCounts[k] || 0) + 1;
+      });
+      const toolSummary = Object.entries(toolCounts)
+        .filter(([k]) => k && k !== "none")
+        .map(([k,v]) => `${k}×${v}`)
+        .join(", ");
+      if (toolSummary) {
+        $("overlaySub").textContent = `Completed: ${toolSummary}. Report ready.`;
+      }
+
+      addToHistory({
+        time: Date.now(),
+        overallRisk: (parsed.overallRisk || overallRisk || "unknown"),
+        iocCount: iocs.length,
+        findingsCount: data.findingsCount ?? null,
+        errorsCount: data.errorsCount ?? null,
+        summary: parsed.summary || [],
+        actions: parsed.actions || [],
+        limitations: parsed.limitations || [],
+        tech: safeTech
+      });
+
+      $("out").style.display = "block";
+      setTimeout(() => showOverlay(false), 450);
+
+    } catch (e) {
+      stopPhaseAnimation();
+      showOverlay(false);
+      $("errText").textContent = String(e);
+      $("err").style.display = "block";
+      renderTimeline("validate", []);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
