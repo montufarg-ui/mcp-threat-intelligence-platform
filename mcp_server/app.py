@@ -29,16 +29,32 @@ logger = logging.getLogger("mcp")
 
 
 # -----------------------------
-# LOAD ENV (project root)
+# ENV LOADING (local-only; Render env wins)
 # -----------------------------
-env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(dotenv_path=env_path)
+# Render injects environment variables at runtime. We should NOT load a local .env file in Render,
+# because it can accidentally override real secrets or be absent/mismatched.
+#
+# Local dev: we load .env from repo root if it exists.
+#
+# NOTE: Render sets RENDER="true" in the runtime environment.
+IS_RENDER = bool(os.getenv("RENDER"))
 
-ABUSEIPDB_API_KEY = os.getenv("ABUSEIPDB_API_KEY")
-VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY")
-SHODAN_API_KEY = os.getenv("SHODAN_API_KEY")
-NVD_API_KEY = os.getenv("NVD_API_KEY")  # optional
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not IS_RENDER:
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=False)
+        logger.info(f"Loaded local .env from: {env_path}")
+    else:
+        logger.info("No local .env found; relying on process environment variables.")
+else:
+    logger.info("Running on Render; using Render environment variables only.")
+
+
+ABUSEIPDB_API_KEY = (os.getenv("ABUSEIPDB_API_KEY") or "").strip() or None
+VIRUSTOTAL_API_KEY = (os.getenv("VIRUSTOTAL_API_KEY") or "").strip() or None
+SHODAN_API_KEY = (os.getenv("SHODAN_API_KEY") or "").strip() or None
+NVD_API_KEY = (os.getenv("NVD_API_KEY") or "").strip() or None  # optional
+OPENAI_API_KEY = (os.getenv("OPENAI_API_KEY") or "").strip() or None
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
@@ -83,7 +99,7 @@ cache = TTLCache(maxsize=2000, ttl=600)
 # -----------------------------
 # PROVIDER STATUS (in-memory)
 # -----------------------------
-# state: "ok" | "error" | "rate_limited" | "missing_key"
+# state: "ok" | "error" | "rate_limited" | "missing_key" | "unknown"
 provider_status: Dict[str, Dict[str, Any]] = {
     "abuseipdb": {"state": "missing_key" if not ABUSEIPDB_API_KEY else "unknown", "last_ok": None, "last_error": None},
     "virustotal": {"state": "missing_key" if not VIRUSTOTAL_API_KEY else "unknown", "last_ok": None, "last_error": None},
@@ -119,6 +135,20 @@ def mark_provider_error(name: str, msg: str, rate_limited: bool = False) -> None
 RL_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 RL_MAX_REQUESTS = int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "12"))
 _rate_store: Dict[str, List[float]] = {}
+
+
+def _best_effort_client_ip(request: Request) -> str:
+    """
+    Render sits behind a proxy. Prefer X-Forwarded-For if present.
+    Fall back to request.client.host.
+    """
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        # may be a comma-separated list. first is original client.
+        return xff.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return "unknown"
 
 
 def rate_limit_or_429(client_id: str) -> None:
@@ -203,6 +233,13 @@ def safe_provider_error(provider: str, status_code: int) -> str:
     return f"{provider} service error (status={status_code})."
 
 
+def _missing_key_msg(var_name: str) -> str:
+    # Avoid telling production users to "add it to .env"
+    if IS_RENDER:
+        return f"{var_name} missing. Configure it as a Render environment variable."
+    return f"{var_name} missing. Add it to .env in the project root (local dev)."
+
+
 # -----------------------------
 # REQUEST LOGGING MIDDLEWARE
 # -----------------------------
@@ -249,7 +286,7 @@ class CorrelateIOCsRequest(BaseModel):
     iocs: List[str] = Field(
         ...,
         json_schema_extra={
-            "examples": [["8.8.8.8", "google.com", "CVE-2021-44228", "44d88612fea8a8f36de82e1278abb02f"]]
+            "examples": [["8.8.8.8", "google.com", "CVE-2021-44228", "44d88612fea8a8a8f36de82e1278abb02f"]]
         },
     )
 
@@ -278,6 +315,7 @@ def health():
         "service": "Threat Intelligence MCP Server",
         "owner": "Gus",
         "cache": {"maxsize": cache.maxsize, "ttl_seconds": cache.ttl},
+        "runtime": {"render": IS_RENDER, "rate_limit": {"window_seconds": RL_WINDOW_SECONDS, "max_requests": RL_MAX_REQUESTS}},
     }
 
 
@@ -301,7 +339,7 @@ def check_ip(payload: CheckIPRequest):
 
     if not ABUSEIPDB_API_KEY:
         provider_status["abuseipdb"]["state"] = "missing_key"
-        raise HTTPException(status_code=500, detail="ABUSEIPDB_API_KEY missing. Add it to .env in project root.")
+        raise HTTPException(status_code=500, detail=_missing_key_msg("ABUSEIPDB_API_KEY"))
 
     url = "https://api.abuseipdb.com/api/v2/check"
     headers = {"Accept": "application/json", "Key": ABUSEIPDB_API_KEY}
@@ -360,7 +398,7 @@ def scan_hash(payload: ScanHashRequest):
 
     if not VIRUSTOTAL_API_KEY:
         provider_status["virustotal"]["state"] = "missing_key"
-        raise HTTPException(status_code=500, detail="VIRUSTOTAL_API_KEY missing. Add it to .env in project root.")
+        raise HTTPException(status_code=500, detail=_missing_key_msg("VIRUSTOTAL_API_KEY"))
 
     url = f"https://www.virustotal.com/api/v3/files/{h}"
     headers = {"accept": "application/json", "x-apikey": VIRUSTOTAL_API_KEY}
@@ -462,7 +500,7 @@ def lookup_domain(payload: LookupDomainRequest):
     # 2) Fallback to VirusTotal
     if not VIRUSTOTAL_API_KEY:
         provider_status["virustotal"]["state"] = "missing_key"
-        raise HTTPException(status_code=500, detail="No SHODAN_API_KEY and no VIRUSTOTAL_API_KEY. Add at least one.")
+        raise HTTPException(status_code=500, detail="No SHODAN_API_KEY and no VIRUSTOTAL_API_KEY configured.")
 
     url = f"https://www.virustotal.com/api/v3/domains/{domain}"
     headers = {"accept": "application/json", "x-apikey": VIRUSTOTAL_API_KEY}
@@ -775,7 +813,7 @@ def build_llm_prompts(audience: str, tone: str, verbosity: str, correlated_data:
 def llm_triage(payload: LLMTriageRequest, debug: bool = Query(False)):
     if not openai_client:
         provider_status["openai"]["state"] = "missing_key"
-        raise HTTPException(status_code=500, detail="OPENAI_API_KEY missing. Add it to your .env file.")
+        raise HTTPException(status_code=500, detail=_missing_key_msg("OPENAI_API_KEY"))
 
     correlated_data = correlate_iocs(CorrelateIOCsRequest(iocs=payload.iocs))
     system_prompt, user_prompt = build_llm_prompts(payload.audience, payload.tone, payload.verbosity, correlated_data)
@@ -873,8 +911,8 @@ def extract_iocs_from_text(text: str) -> List[str]:
 
 @app.post("/agent/query", tags=["Agent"], summary="Natural language threat triage (rate limited)")
 def agent_query(payload: AgentQueryRequest, request: Request, debug: bool = Query(False)):
-    # Rate limit by client IP (best-effort)
-    client_ip = request.client.host if request.client else "unknown"
+    # Rate limit by best-effort client IP
+    client_ip = _best_effort_client_ip(request)
     rate_limit_or_429(client_ip)
 
     iocs = extract_iocs_from_text(payload.query)
