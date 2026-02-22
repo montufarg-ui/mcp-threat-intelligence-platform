@@ -472,6 +472,103 @@
       box-shadow: var(--ring2);
     }
 
+    /* Provider status */
+    .providerWrap{
+      margin-top: 14px;
+      border-top: 1px solid rgba(216,224,225,.10);
+      padding-top: 12px;
+    }
+    .provList{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top: 10px;
+    }
+    .provItem{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border: 1px solid rgba(216,224,225,.14);
+      background: rgba(216,224,225,.04);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+    .provLeft{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      min-width: 0;
+    }
+    .provName{
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing:.2px;
+      font-family: var(--brand);
+      color: rgba(245,250,251,.92);
+      text-transform: uppercase;
+    }
+    .provMeta{
+      margin-top: 2px;
+      font-size: 11px;
+      color: rgba(245,250,251,.60);
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 230px;
+    }
+    .provPill{
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing:.2px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(216,224,225,.18);
+      background: rgba(216,224,225,.06);
+      text-transform: uppercase;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .provDot{
+      width: 10px; height: 10px;
+      border-radius: 999px;
+      background: rgba(216,224,225,.28);
+      box-shadow: 0 0 0 4px rgba(216,224,225,.10);
+      flex: 0 0 auto;
+    }
+    .state-ok{ background: rgba(25,108,125,.95); box-shadow: 0 0 0 4px rgba(25,108,125,.18); }
+    .state-error{ background: rgba(248,101,0,.95); box-shadow: 0 0 0 4px rgba(248,101,0,.14); }
+    .state-rate_limited{ background: rgba(252,205,98,.95); box-shadow: 0 0 0 4px rgba(252,205,98,.14); }
+    .state-missing_key{ background: rgba(216,224,225,.35); box-shadow: 0 0 0 4px rgba(216,224,225,.10); }
+    .state-unknown{ background: rgba(216,224,225,.22); box-shadow: 0 0 0 4px rgba(216,224,225,.08); }
+
+    .legend{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    .lItem{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size: 11px;
+      color: rgba(245,250,251,.68);
+      border: 1px solid rgba(216,224,225,.14);
+      background: rgba(216,224,225,.03);
+      border-radius: 999px;
+      padding: 6px 10px;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .lDot{
+      width: 9px; height: 9px;
+      border-radius: 999px;
+      background: rgba(216,224,225,.28);
+      box-shadow: 0 0 0 4px rgba(216,224,225,.10);
+    }
+
     /* Loading overlay */
     .overlay{
       position: fixed;
@@ -702,6 +799,30 @@
 
           <div class="timeline" id="processTimeline"></div>
 
+          <div class="providerWrap">
+            <div class="sideTitle" style="margin-bottom:6px;">
+              <strong style="font-family:var(--brand); letter-spacing:.2px;">API Status</strong>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <span class="tag" id="provUpdated">—</span>
+                <button id="refreshProv" class="ghostBtn" style="padding:8px 10px; border-radius: 12px;">Refresh</button>
+              </div>
+            </div>
+
+            <div class="hint" style="margin-top:0;">
+              Provider connectivity signals (in-memory). No keys exposed. States reset on restart.
+            </div>
+
+            <div class="legend" aria-label="Provider status legend">
+              <div class="lItem"><span class="lDot state-ok"></span>ok</div>
+              <div class="lItem"><span class="lDot state-rate_limited"></span>rate_limited</div>
+              <div class="lItem"><span class="lDot state-error"></span>error</div>
+              <div class="lItem"><span class="lDot state-missing_key"></span>missing_key</div>
+              <div class="lItem"><span class="lDot state-unknown"></span>unknown</div>
+            </div>
+
+            <div class="provList" id="provList"></div>
+          </div>
+
           <div class="history">
             <div class="sideTitle" style="margin-bottom:6px;">
               <strong style="font-family:var(--brand); letter-spacing:.2px;">History</strong>
@@ -860,6 +981,124 @@
   }
 
   // -----------------------------
+  // PROVIDER STATUS (API INDICATORS)
+  // -----------------------------
+  const PROVIDER_ORDER = ["abuseipdb","virustotal","shodan","nvd","openai"];
+
+  function safeText(s, fallback="—") {
+    if (typeof s !== "string" || !s.trim()) return fallback;
+    return s.trim();
+  }
+
+  function fmtIso(iso) {
+    if (!iso) return null;
+    try {
+      const d = new Date(iso);
+      if (!isNaN(d.getTime())) return d.toLocaleString();
+    } catch {}
+    return iso;
+  }
+
+  function stateToLabel(state) {
+    const s = (state || "unknown").toString().toLowerCase();
+    if (s === "ok") return "ok";
+    if (s === "rate_limited") return "rate_limited";
+    if (s === "missing_key") return "missing_key";
+    if (s === "error") return "error";
+    return "unknown";
+  }
+
+  function renderProviders(providers) {
+    const list = $("provList");
+    list.innerHTML = "";
+
+    if (!providers || typeof providers !== "object") {
+      const empty = document.createElement("div");
+      empty.className = "hint";
+      empty.style.marginTop = "10px";
+      empty.textContent = "Provider status unavailable.";
+      list.appendChild(empty);
+      return;
+    }
+
+    const keys = PROVIDER_ORDER.filter(k => Object.prototype.hasOwnProperty.call(providers, k))
+      .concat(Object.keys(providers).filter(k => !PROVIDER_ORDER.includes(k)));
+
+    keys.forEach((name) => {
+      const p = providers[name] || {};
+      const state = stateToLabel(p.state);
+
+      const row = document.createElement("div");
+      row.className = "provItem";
+
+      const left = document.createElement("div");
+      left.className = "provLeft";
+
+      const dot = document.createElement("div");
+      dot.className = `provDot state-${state}`;
+
+      const txt = document.createElement("div");
+      txt.style.minWidth = "0";
+
+      const nm = document.createElement("div");
+      nm.className = "provName";
+      nm.textContent = name;
+
+      const meta = document.createElement("div");
+      meta.className = "provMeta";
+
+      const lastOk = fmtIso(p.last_ok);
+      const lastErr = p.last_error && typeof p.last_error === "object" ? safeText(p.last_error.message, "") : "";
+      const lastErrTime = p.last_error && typeof p.last_error === "object" ? fmtIso(p.last_error.time) : null;
+
+      let metaLine = "";
+      if (state === "ok" && lastOk) metaLine = `Last OK: ${lastOk}`;
+      else if ((state === "error" || state === "rate_limited") && (lastErr || lastErrTime)) {
+        metaLine = `${lastErrTime ? `Last error: ${lastErrTime}` : "Last error"}${lastErr ? ` • ${lastErr}` : ""}`;
+      } else if (state === "missing_key") metaLine = "API key not configured.";
+      else metaLine = "No recent provider signal.";
+
+      meta.textContent = metaLine;
+
+      txt.appendChild(nm);
+      txt.appendChild(meta);
+
+      left.appendChild(dot);
+      left.appendChild(txt);
+
+      const pill = document.createElement("div");
+      pill.className = "provPill";
+      pill.textContent = state;
+
+      row.appendChild(left);
+      row.appendChild(pill);
+      list.appendChild(row);
+    });
+  }
+
+  async function refreshProviders() {
+    $("provUpdated").textContent = "Loading…";
+    try {
+      const res = await fetch("/status/providers", { method: "GET" });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      renderProviders(data.providers);
+      $("provUpdated").textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+    } catch (e) {
+      renderProviders(null);
+      $("provUpdated").textContent = "Unavailable";
+    }
+  }
+
+  $("refreshProv").addEventListener("click", () => refreshProviders());
+
+  // auto-refresh every 30s (safe + lightweight)
+  setInterval(() => refreshProviders(), 30000);
+
+  // initial load
+  refreshProviders();
+
+  // -----------------------------
   // HISTORY (NO IOC VALUES)
   // -----------------------------
   const HIST_KEY = "mcp_threat_report_history_v1";
@@ -917,11 +1156,17 @@
 
       const meta = document.createElement("div");
       meta.className = "histMeta";
-      meta.innerHTML = `
-        <span>IOCs: <strong>${it.iocCount ?? "?"}</strong></span>
-        <span>Findings: <strong>${it.findingsCount ?? "?"}</strong></span>
-        <span>Errors: <strong>${it.errorsCount ?? "0"}</strong></span>
-      `;
+
+      const a = document.createElement("span");
+      a.innerHTML = `IOCs: <strong>${it.iocCount ?? "?"}</strong>`;
+      const b = document.createElement("span");
+      b.innerHTML = `Findings: <strong>${it.findingsCount ?? "?"}</strong>`;
+      const c = document.createElement("span");
+      c.innerHTML = `Errors: <strong>${it.errorsCount ?? "0"}</strong>`;
+
+      meta.appendChild(a);
+      meta.appendChild(b);
+      meta.appendChild(c);
 
       card.appendChild(top);
       card.appendChild(meta);
@@ -1087,6 +1332,10 @@
       });
 
       $("out").style.display = "block";
+
+      // refresh provider signals after the run (nice for demos)
+      refreshProviders();
+
       setTimeout(() => showOverlay(false), 450);
 
     } catch (e) {
